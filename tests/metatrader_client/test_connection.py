@@ -17,7 +17,7 @@ def connection_config():
     login = os.getenv("LOGIN")
     password = os.getenv("PASSWORD")
     server = os.getenv("SERVER")
-    path = os.getenv("TERMINAL_PATH", None)
+    path = os.getenv("MT5_PATH", os.getenv("TERMINAL_PATH", None))
     if not login or not password or not server:
         print("❌ Error: Missing required environment variables!")
         print("Please create a .env file with LOGIN, PASSWORD, and SERVER variables.")
