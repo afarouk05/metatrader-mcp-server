@@ -10,7 +10,7 @@ MCP server enabling AI assistants to trade on MetaTrader 5 via natural language.
 
 ---
 
-## Architecture (3 Packages)
+## Architecture (4 Packages)
 
 ### 1. `metatrader_client` - Core MT5 Library
 ```
@@ -40,6 +40,13 @@ def place_market_order(connection, *, type: str, symbol: str, volume: Union[floa
 - Routers: accounts, market, orders, positions, history
 - Client: `request.app.state.client`
 - CORS enabled, lifespan-managed connection
+
+### 4. `metatrader_quote` - WebSocket Quote Server
+- Streams live MT5 tick data to connected clients over WebSocket (`websockets`)
+- `QuoteServer` polls MT5 for ticks and broadcasts updates to subscribers
+- Config via `Settings` (pydantic), env vars prefixed `QUOTE_` (e.g. `QUOTE_PORT`, `QUOTE_SYMBOLS`, `QUOTE_POLL_INTERVAL_MS`)
+- Defaults: host `0.0.0.0`, port `8765`, 100ms poll interval
+- Launch: `metatrader-quote --login ... --password ... --server ...`
 
 ---
 
@@ -194,7 +201,10 @@ async def endpoint(request: Request, param: type = Body(...)):
 **Required**: `LOGIN`, `PASSWORD`, `SERVER`
 **Optional**: `MT5_PATH` (path to MT5 terminal executable, auto-detected if not set), `OPENAPI_TITLE`, `OPENAPI_VERSION`
 **MCP Transport**: `MCP_TRANSPORT` (sse|stdio|streamable-http, default: sse), `MCP_HOST` (default: 0.0.0.0), `MCP_PORT` (default: 8080)
+**Quote Server**: `QUOTE_HOST` (default: 0.0.0.0), `QUOTE_PORT` (default: 8765), `QUOTE_SYMBOLS` (comma-separated), `QUOTE_POLL_INTERVAL_MS` (default: 100)
 **Debug**: Set `debug: True` in config dict
+
+> Note: `LOGIN`/`PASSWORD`/`SERVER` are read uppercase-first; lowercase fallbacks are supported for backward compatibility.
 
 ---
 

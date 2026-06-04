@@ -15,10 +15,10 @@ from metatrader_mcp.utils import resolve_transport_config, run_mcp
 def main(login, password, server, path, transport, host, port):
     """Launch the MetaTrader MCP server."""
     load_dotenv()
-    # override env vars if provided via CLI
-    os.environ["login"] = str(login)
-    os.environ["password"] = password
-    os.environ["server"] = server
+    # override env vars if provided via CLI (uppercase per .env convention)
+    os.environ["LOGIN"] = str(login)
+    os.environ["PASSWORD"] = password
+    os.environ["SERVER"] = server
     if path:
         os.environ["MT5_PATH"] = path
 

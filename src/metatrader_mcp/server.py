@@ -10,6 +10,7 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Optional, Union
 
+from metatrader_client import MT5Client
 from metatrader_mcp.utils import init, get_client
 
 # ────────────────────────────────────────────────────────────────────────────────
@@ -17,17 +18,18 @@ from metatrader_mcp.utils import init, get_client
 # ────────────────────────────────────────────────────────────────────────────────
 @dataclass
 class AppContext:
-	client: str
+	client: MT5Client
 
 @asynccontextmanager
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:
 
 	try:
+		# Support both uppercase (.env convention) and lowercase env vars
 		client = init(
-			os.getenv("login"),
-			os.getenv("password"),
-			os.getenv("server"),
-			os.getenv("MT5_PATH")
+			os.getenv("LOGIN", os.getenv("login")),
+			os.getenv("PASSWORD", os.getenv("password")),
+			os.getenv("SERVER", os.getenv("server")),
+			os.getenv("MT5_PATH", os.getenv("mt5_path")),
 		)
 		yield AppContext(client=client)
 	finally:
@@ -66,6 +68,7 @@ def get_orders(ctx: Context, from_date: Optional[str] = None, to_date: Optional[
 	df = client.history.get_orders_as_dataframe(from_date=from_date, to_date=to_date, group=symbol)
 	return df.to_csv() if hasattr(df, 'to_csv') else str(df)
 
+@mcp.tool()
 def get_candles_by_date(ctx: Context, symbol_name: str, timeframe: str, from_date: str = None, to_date: str = None) -> str:
 	"""Get candle data for a symbol in a given timeframe and date range as CSV. Date input in format: ISO 8601 or 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM'."""
 	client = get_client(ctx)
@@ -104,43 +107,43 @@ def get_symbols(ctx: Context, group: Optional[str] = None) -> list:
 # ────────────────────────────────────────────────────────────────────────────────
 
 @mcp.tool()
-def get_all_positions(ctx: Context) -> list:
-	"""Get all open positions."""
+def get_all_positions(ctx: Context) -> str:
+	"""Get all open positions as CSV."""
 	client = get_client(ctx)
 	df = client.order.get_all_positions()
 	return df.to_csv() if hasattr(df, 'to_csv') else str(df)
 
 @mcp.tool()
-def get_positions_by_symbol(ctx: Context, symbol: str) -> list:
-	"""Get open positions for a specific symbol."""
+def get_positions_by_symbol(ctx: Context, symbol: str) -> str:
+	"""Get open positions for a specific symbol as CSV."""
 	client = get_client(ctx)
 	df = client.order.get_positions_by_symbol(symbol=symbol)
 	return df.to_csv() if hasattr(df, 'to_csv') else str(df)
 
 @mcp.tool()
-def get_positions_by_id(ctx: Context, id: Union[int, str]) -> list:
-	"""Get open positions by ID."""
+def get_positions_by_id(ctx: Context, id: Union[int, str]) -> str:
+	"""Get open positions by ID as CSV."""
 	client = get_client(ctx)
 	df = client.order.get_positions_by_id(id=id)
 	return df.to_csv() if hasattr(df, 'to_csv') else str(df)
 
 @mcp.tool()
-def get_all_pending_orders(ctx: Context) -> list:
-	"""Get all pending orders."""
+def get_all_pending_orders(ctx: Context) -> str:
+	"""Get all pending orders as CSV."""
 	client = get_client(ctx)
 	df = client.order.get_all_pending_orders()
 	return df.to_csv() if hasattr(df, 'to_csv') else str(df)
 
 @mcp.tool()
-def get_pending_orders_by_symbol(ctx: Context, symbol: str) -> list:
-	"""Get pending orders for a specific symbol."""
+def get_pending_orders_by_symbol(ctx: Context, symbol: str) -> str:
+	"""Get pending orders for a specific symbol as CSV."""
 	client = get_client(ctx)
 	df = client.order.get_pending_orders_by_symbol(symbol=symbol)
 	return df.to_csv() if hasattr(df, 'to_csv') else str(df)
 
 @mcp.tool()
-def get_pending_orders_by_id(ctx: Context, id: Union[int, str]) -> list:
-	"""Get pending orders by id."""
+def get_pending_orders_by_id(ctx: Context, id: Union[int, str]) -> str:
+	"""Get pending orders by id as CSV."""
 	client = get_client(ctx)
 	df = client.order.get_pending_orders_by_id(id=id)
 	return df.to_csv() if hasattr(df, 'to_csv') else str(df)
@@ -243,10 +246,10 @@ if __name__ == "__main__":
 
 	args = parser.parse_args()
 
-	# inject into lifespan via env vars
-	if args.login:    os.environ["login"]    = args.login
-	if args.password: os.environ["password"] = args.password
-	if args.server:   os.environ["server"]   = args.server
+	# inject into lifespan via env vars (uppercase per .env convention)
+	if args.login:    os.environ["LOGIN"]    = args.login
+	if args.password: os.environ["PASSWORD"] = args.password
+	if args.server:   os.environ["SERVER"]   = args.server
 	if args.path:     os.environ["MT5_PATH"] = args.path
 
 	transport, host, port = resolve_transport_config(args.transport, args.host, args.port)
